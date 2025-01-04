@@ -54,14 +54,23 @@
     }
 }
 - (IBAction)confirmEditing:(id)sender {
-    List * newList = [List new];
-    newList.name = _editingName.text;
-    newList.descript =_editingDescription.text;
-    newList.priority =_editingPriorityOutlet.selectedSegmentIndex;
-    newList.state =_editingStateOutlet.selectedSegmentIndex;
-    newList.endDate = _editingDate.date;
-    [_editingDelegate editToTheTable:newList:_section:_row];
-    [self.navigationController popViewControllerAnimated:YES];
+    UIAlertController * alert = [UIAlertController alertControllerWithTitle:@"Editing" message:@"Are you Sure you want to Confirm Editing?" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction * ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        List * newList = [List new];
+        newList.name = self->_editingName.text;
+        newList.descript =self->_editingDescription.text;
+        newList.priority =self->_editingPriorityOutlet.selectedSegmentIndex;
+        newList.state =self->_editingStateOutlet.selectedSegmentIndex;
+        newList.endDate = self->_editingDate.date;
+        [self->_editingDelegate editToTheTable:newList:self->_section:self->_row];
+        [self.navigationController popViewControllerAnimated:YES];
+    }];
+    UIAlertAction * cancle = [UIAlertAction actionWithTitle:@"Cancle" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+    }];
+    [alert addAction:ok];
+    [alert addAction:cancle];
+    [self presentViewController:alert animated:YES completion:NULL];
 }
 
 /*
