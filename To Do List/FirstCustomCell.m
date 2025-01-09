@@ -12,7 +12,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
-    self.firstCustomCellImage.translatesAutoresizingMaskIntoConstraints = NO;
+    self.firstCustomCellLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.firstCustomCellImage.translatesAutoresizingMaskIntoConstraints =NO;
 }
 

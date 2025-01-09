@@ -22,11 +22,11 @@
 - (nullable instancetype)initWithCoder:(nonnull NSCoder *)coder {
     if((self = [super init]))
     {
-        _name = [coder decodeObjectOfClass:[NSString class] forKey:@"name"];
-        _descript = [coder decodeObjectOfClass:[NSString class] forKey:@"descript"];
-        _endDate = [coder decodeObjectOfClass:[NSString class] forKey:@"endDate"];
-        _state = [coder decodeIntForKey:@"state"];
-        _priority = [coder decodeIntForKey:@"priority"];
+        _name = [coder decodeObjectForKey:@"name"];
+        _descript = [coder decodeObjectForKey:@"descript"];
+        _endDate = [coder decodeObjectForKey:@"endDate"];
+        _state = [coder decodeIntegerForKey:@"state"];
+        _priority = [coder decodeIntegerForKey:@"priority"];
     }
     return self;
 }

@@ -54,6 +54,7 @@
     }
 }
 - (IBAction)confirmEditing:(id)sender {
+    
     UIAlertController * alert = [UIAlertController alertControllerWithTitle:@"Editing" message:@"Are you Sure you want to Confirm Editing?" preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction * ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         List * newList = [List new];
