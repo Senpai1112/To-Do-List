@@ -30,6 +30,33 @@
 
 @implementation secondUIViewController
 
+-(void) readFromUserDefaults
+{
+    progressData = [defaults objectForKey:progressKey];
+    if(progressData)
+    {
+        progress = [NSKeyedUnarchiver unarchiveObjectWithData:progressData];
+        [self arrangeWithPriorities];
+    }
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
+{
+    NSString * searchText = searchController.searchBar.text;
+    if(searchText.length == 0)
+    {
+        [self readFromUserDefaults];
+    }
+    else
+    {
+        [self readFromUserDefaults];
+        NSPredicate * predicate = [NSPredicate predicateWithFormat:@"name CONTAINS[cd] %@",searchText];
+        progress = [progress filteredArrayUsingPredicate:predicate];
+        [self arrangeWithPriorities];
+    }
+    [self.inProgressTable reloadData];
+}
+
 -(void) arrangeWithPriorities
 {
     [lowPriority removeAllObjects];
@@ -61,6 +88,32 @@
     [self arrangeWithPriorities];
 }
 
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section
+{
+    UITableViewHeaderFooterView * headerView = (UITableViewHeaderFooterView *) view;
+    if([view isKindOfClass:[UITableViewHeaderFooterView class]])
+    {
+        if([defaults boolForKey:isSortedKey])
+        {
+            switch (section) {
+                case 0:
+                    headerView.textLabel.textColor  = [UIColor systemGreenColor];
+                    break;
+                case 1:
+                    headerView.textLabel.textColor = [UIColor systemYellowColor];
+                    break;
+                default:
+                    headerView.textLabel.textColor  = [UIColor systemRedColor];
+                    break;
+            }
+        }
+        else
+        {
+            headerView.textLabel.textColor = [UIColor systemBlueColor];
+        }
+    }
+}
+
 
 - (void)viewWillAppear:(BOOL)animated
 {
@@ -76,6 +129,12 @@
     UIBarButtonItem * sortButton = [[UIBarButtonItem alloc] initWithTitle:@"Sort" style:UIBarButtonItemStylePlain target:self action:@selector(sortList)];
     self.tabBarController.navigationItem.rightBarButtonItem = sortButton;
     [self.inProgressTable reloadData];
+    
+    UISearchController * searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+    searchController.hidesNavigationBarDuringPresentation= YES;
+    [searchController searchBar];
+    searchController.searchResultsUpdater = self;
+    self.tabBarController.navigationItem.searchController = searchController;
 }
 - (void)viewDidLoad {
     [super viewDidLoad];

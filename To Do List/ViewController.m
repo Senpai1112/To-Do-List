@@ -60,6 +60,17 @@
     }
 }
 
+-(void) readFromUserDefaults
+{
+    toDoData = [defaults objectForKey:toDoKey];
+    if(toDoData)
+    {
+        toDo = [NSKeyedUnarchiver unarchiveObjectWithData:toDoData];
+        filteredToDo = [toDo mutableCopy];
+        [self arrangeWithPriorities];
+    }
+}
+
 -(void) editInTheUserDefaults
 {
     toDoData = [NSKeyedArchiver archivedDataWithRootObject:toDo requiringSecureCoding:YES error:nil];
@@ -87,16 +98,14 @@
     NSString * searchText = searchController.searchBar.text;
     if(searchText.length == 0)
     {
-        /*filteredLowPriority = [lowPriority mutableCopy];
-        filteredMedPriority = [medPriority mutableCopy];
-        filteredHighPriority = [highPriority mutableCopy];*/
+        [self readFromUserDefaults];
     }
     else
     {
-        /*NSPredicate * predicate = [NSPredicate predicateWithFormat:@"name CONTAINS[cd] %@",searchText];
-        filteredLowPriority = [NSMutableArray arrayWithArray:[lowPriority filteredArrayUsingPredicate:predicate]];
-        filteredMedPriority = [NSMutableArray arrayWithArray:[medPriority filteredArrayUsingPredicate:predicate]];
-        filteredHighPriority = [NSMutableArray arrayWithArray:[highPriority filteredArrayUsingPredicate:predicate]];*/
+        [self readFromUserDefaults];
+        NSPredicate * predicate = [NSPredicate predicateWithFormat:@"name CONTAINS[cd] %@",searchText];
+        toDo = [toDo filteredArrayUsingPredicate:predicate];
+        [self arrangeWithPriorities];
     }
     [self.toDoTable reloadData];
 }
@@ -368,6 +377,25 @@
     }
     cell.firstCustomCellImage.layer.cornerRadius = 30;
     return cell;
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section
+{
+    if([view isKindOfClass:[UITableViewHeaderFooterView class]])
+    {
+        UITableViewHeaderFooterView * headerView = (UITableViewHeaderFooterView *) view;
+        switch (section) {
+            case 0:
+                headerView.textLabel.textColor  = [UIColor systemGreenColor];
+                break;
+            case 1:
+                headerView.textLabel.textColor = [UIColor systemYellowColor];
+                break;
+            default:
+                headerView.textLabel.textColor  = [UIColor systemRedColor];
+                break;
+        }
+    }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
