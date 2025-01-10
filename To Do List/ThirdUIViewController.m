@@ -9,28 +9,19 @@
 
 @interface ThirdUIViewController ()
 {
-    NSMutableArray * lowPriority;
-    NSMutableArray * medPriority;
-    NSMutableArray * highPriority;
-    NSMutableArray * inProgress;
-    List * list;
-    
-    NSData * lowPriorityData;
-    NSData * medPriorityData;
-    NSData * highPriorityData;
-    NSData * inProgressData;
-    NSData * listData;
+    NSMutableArray<List*> * done;
+    NSMutableArray<List*> * lowPriority;
+    NSMutableArray<List*> * medPriority;
+    NSMutableArray<List*> * highPriority;
+
+    NSData * doneData;
     
     NSUserDefaults * defaults;
     NSMutableArray * sections;
     
-    NSString * lowPriorityKey;
-    NSString * medPriorityKey;
-    NSString * highPriorityKey;
-    NSString * isSortedKey;
+    NSString * doneKey;
     
-    NSString * inDoneKey;
-    NSString * inDoneListKey;
+    NSString * isSortedKey;
 }
 @property (weak, nonatomic) IBOutlet UITableView *inDoneTable;
 
@@ -39,86 +30,111 @@
 
 @implementation ThirdUIViewController
 
+-(void) readFromUserDefaults
+{
+    doneData = [defaults objectForKey:doneKey];
+    if(doneData)
+    {
+        done = [NSKeyedUnarchiver unarchiveObjectWithData:doneData];
+        [self arrangeWithPriorities];
+    }
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
+{
+    NSString * searchText = searchController.searchBar.text;
+    if(searchText.length == 0)
+    {
+        [self readFromUserDefaults];
+    }
+    else
+    {
+        [self readFromUserDefaults];
+        NSPredicate * predicate = [NSPredicate predicateWithFormat:@"name CONTAINS[cd] %@",searchText];
+        done = [done filteredArrayUsingPredicate:predicate];
+        [self arrangeWithPriorities];
+    }
+    [self.inDoneTable reloadData];
+}
+
+-(void) arrangeWithPriorities
+{
+    [lowPriority removeAllObjects];
+    [medPriority removeAllObjects];
+    [highPriority removeAllObjects];
+    for(int i = 0; i < done.count ; i++)
+    {
+        if(done[i].priority == 0)
+        {
+            [lowPriority addObject:done[i]];
+        }
+        else if (done[i].priority == 1)
+        {
+            [medPriority addObject:done[i]];
+        }
+        else
+        {
+            [highPriority addObject:done[i]];
+        }
+    }
+    
+}
+
+-(void) editInTheUserDefaults
+{
+    doneData = [NSKeyedArchiver archivedDataWithRootObject:done requiringSecureCoding:YES error:nil];
+    [defaults setObject:doneData forKey:doneKey];
+    [defaults synchronize];
+    [self arrangeWithPriorities];
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section
+{
+    UITableViewHeaderFooterView * headerView = (UITableViewHeaderFooterView *) view;
+    if([view isKindOfClass:[UITableViewHeaderFooterView class]])
+    {
+        if([defaults boolForKey:isSortedKey])
+        {
+            switch (section) {
+                case 0:
+                    headerView.textLabel.textColor  = [UIColor systemGreenColor];
+                    break;
+                case 1:
+                    headerView.textLabel.textColor = [UIColor systemYellowColor];
+                    break;
+                default:
+                    headerView.textLabel.textColor  = [UIColor systemRedColor];
+                    break;
+            }
+        }
+        else
+        {
+            headerView.textLabel.textColor = [UIColor systemBlueColor];
+        }
+    }
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:YES];
     
-    lowPriorityData = [defaults objectForKey:lowPriorityKey];
-    medPriorityData = [defaults objectForKey:medPriorityKey];
-    highPriorityData = [defaults objectForKey:highPriorityKey];
-    
-    inProgressData = [defaults objectForKey:inDoneKey];
-    listData = [defaults objectForKey:inDoneListKey];
-    
-    if(lowPriorityData)
+    doneData = [defaults objectForKey:doneKey];
+    if(doneData)
     {
-        lowPriority = [NSKeyedUnarchiver unarchiveObjectWithData:lowPriorityData];
+        [done removeAllObjects];
+        [done addObjectsFromArray:[NSKeyedUnarchiver unarchiveObjectWithData:doneData]];
+        [self arrangeWithPriorities];
     }
-    if(medPriorityData)
-    {
-        medPriority = [NSKeyedUnarchiver unarchiveObjectWithData:medPriorityData];
-    }
-    if(highPriorityData)
-    {
-        highPriority = [NSKeyedUnarchiver unarchiveObjectWithData:highPriorityData];
-    }
-    if(inProgressData)
-    {
-        inProgress = [NSKeyedUnarchiver unarchiveObjectWithData:inProgressData];
-    }
-    if(listData)
-    {
-        list = [NSKeyedUnarchiver unarchiveObjectWithData:listData];
-    }
-    if([defaults boolForKey:@"isThirdEdited"])
-    {
-        NSData * temp = [NSData new];
-        [inProgress addObject:list];
-
-        switch (list.priority)
-            {
-                case 0:
-                    [lowPriority addObject:list];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:lowPriority requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:lowPriorityKey];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:inProgress requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:inDoneKey];
-                    [defaults synchronize];
-                    break;
-                    
-                case 1 :
-                    [medPriority addObject:list];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:medPriority requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:medPriorityKey];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:inProgress requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:inDoneKey];
-                    [defaults synchronize];
-                    break;
-                case 2:
-                    [highPriority addObject:list];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:highPriority requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:highPriorityKey];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:inProgress requiringSecureCoding:YES error:nil];
-                    [defaults setObject:temp forKey:inDoneKey];
-                    [defaults synchronize];
-            }
-        [defaults removeObjectForKey:inDoneListKey];
-        [self.inDoneTable reloadData];
-    }
-    [defaults setBool:NO forKey:@"isThirdEdited"];
     UIBarButtonItem * sortButton = [[UIBarButtonItem alloc] initWithTitle:@"Sort" style:UIBarButtonItemStylePlain target:self action:@selector(sortList)];
     self.tabBarController.navigationItem.rightBarButtonItem = sortButton;
+    [self.inDoneTable reloadData];
+    
+    UISearchController * searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+    searchController.hidesNavigationBarDuringPresentation= YES;
+    [searchController searchBar];
+    searchController.searchResultsUpdater = self;
+    self.tabBarController.navigationItem.searchController = searchController;
 }
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    return 80;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath{
-    return  80;
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
@@ -126,35 +142,27 @@
     _inDoneTable.dataSource = self;
     
     self.inDoneTable.rowHeight = UITableViewAutomaticDimension;
-    self.inDoneTable.estimatedRowHeight = UITableViewAutomaticDimension;
-    
-    list = [List new];
+
         
     sections = [[NSMutableArray alloc] initWithObjects:@"Low Priority",@"Meduim Priority", @"High Priority",nil];
+    
+    done = [NSMutableArray new];
+    
     
     lowPriority = [NSMutableArray new];
     medPriority = [NSMutableArray new];
     highPriority = [NSMutableArray new];
-    inProgress = [NSMutableArray new];
     
-    lowPriorityData = [NSData new];
-    medPriorityData = [NSData new];
-    highPriorityData = [NSData new];
-    inProgressData = [NSData new];
-    listData = [NSData new];
+    doneData = [NSData new];
     
     defaults = [NSUserDefaults standardUserDefaults];
+
+    doneKey = @"doneKey";
     
-    lowPriorityKey = @"lowPriorityThirdKey";
-    medPriorityKey = @"medPriorityThirdKey";
-    highPriorityKey = @"highPriorityThirdKey";
-    
-    inDoneKey = @"inDoneKey";
-    inDoneListKey =@"inDoneListKey";
-    
-    isSortedKey = @"isSortedThirdKey";
+    isSortedKey = @"isSortedKey";
     [defaults setBool:YES forKey:isSortedKey];
     
+    doneData = [defaults objectForKey:doneKey];
 }
 
 -(void) sortList
@@ -180,31 +188,39 @@
     {
         UIAlertController * alert = [UIAlertController alertControllerWithTitle:@"Delete" message:@"Are you Sure you want to delete this cell ?" preferredStyle:UIAlertControllerStyleAlert];
         UIAlertAction * ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-            NSData * temp = [NSData new];
-            switch (indexPath.section) {
-                case 0:
-                    [self->lowPriority removeObjectAtIndex:indexPath.row];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:self->lowPriority requiringSecureCoding:YES error:nil];
-                    [self->defaults setObject:temp forKey:self->lowPriorityKey];
-                    [self->defaults synchronize];
-                    break;
-                    
-                case 1:
-                    [self->medPriority removeObjectAtIndex:indexPath.row];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:self->medPriority requiringSecureCoding:YES error:nil];
-                    [self->defaults setObject:temp forKey:self->medPriorityKey];
-                    [self->defaults synchronize];
-                    break;
-                    
-                default:
-                    [self->highPriority removeObjectAtIndex:indexPath.row];
-                    temp = [NSKeyedArchiver archivedDataWithRootObject:self->highPriority requiringSecureCoding:YES error:nil];
-                    [self->defaults setObject:temp forKey:self->highPriorityKey];
-                    [self->defaults synchronize];
-                    break;
+            if([self->defaults boolForKey:self->isSortedKey])
+            {
+                List * list = [List new];
+                switch (indexPath.section) {
+                    case 0:
+                        list = [self->lowPriority objectAtIndex:indexPath.row];
+                        [self->lowPriority removeObjectAtIndex:indexPath.row];
+                        break;
+                        
+                    case 1:
+                        list = [self->medPriority objectAtIndex:indexPath.row];
+                        [self->medPriority removeObjectAtIndex:indexPath.row];
+                        break;
+                        
+                    default:
+                        list = [self->highPriority objectAtIndex:indexPath.row];
+                        [self->highPriority removeObjectAtIndex:indexPath.row];
+                        break;
+                }
+                [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+                [self->done removeObjectIdenticalTo:list];
+                [self editInTheUserDefaults];
+                [self arrangeWithPriorities];
+                [self.inDoneTable reloadData];
             }
-            
-            [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            else
+            {
+                [self->done removeObjectAtIndex:indexPath.row];
+                [self editInTheUserDefaults];
+                [self arrangeWithPriorities];
+                [self.inDoneTable reloadData];
+            }
+
         }];
         UIAlertAction * cancle = [UIAlertAction actionWithTitle:@"Cancle" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             
@@ -214,6 +230,7 @@
         [self presentViewController:alert animated:YES completion:NULL];
     }
 }
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     if([defaults boolForKey:isSortedKey])
     {
@@ -225,10 +242,12 @@
     }
 }
 
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if([defaults boolForKey:isSortedKey])
     {
-        switch (section) {
+        switch (section)
+        {
             case 0:
                 return lowPriority.count;
                 break;
@@ -242,9 +261,8 @@
     }
     else
     {
-        return (lowPriority.count + medPriority.count + highPriority.count) ;
+        return done.count ;
     }
-    
 }
 -(NSString *) tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
@@ -254,7 +272,7 @@
     }
     else
     {
-        return @"";
+        return @"unsorted";
     }
 }
 
@@ -283,10 +301,8 @@
     }
     else
     {
-        cell.firstCustomCellLabel.text = [[inProgress objectAtIndex:indexPath.row] name];
-        List * newlist = [List new];
-        newlist = [inProgress objectAtIndex:indexPath.row];
-        switch (newlist.priority) {
+        cell.firstCustomCellLabel.text = [[done objectAtIndex:indexPath.row] name];
+        switch ([[done objectAtIndex:indexPath.row] priority]) {
             case 0:
                 cell.firstCustomCellImage.image = [UIImage imageNamed:@"1"];
                 break;
@@ -307,76 +323,41 @@
 {
     EditingThirdViewController * editingThirdVC = [self.storyboard instantiateViewControllerWithIdentifier:@"thirdEdit"];
     editingThirdVC.editingDelegate = self;
-    switch (indexPath.section)
+    if([defaults boolForKey:isSortedKey])
     {
-        case 0:
-            [editingThirdVC setList:lowPriority[indexPath.row]];
-            break;
-        case 1:
-            [editingThirdVC setList:medPriority[indexPath.row]];
-            break;
-        default:
-            [editingThirdVC setList:highPriority[indexPath.row]];
-            break;
-    }
-    [editingThirdVC setRow:indexPath.row];
-    [editingThirdVC setSection:indexPath.section];
-    [self.navigationController pushViewController:editingThirdVC animated:YES];
-}
-
-- (void)editToTheTable:(nonnull List *)list :(NSInteger)section :(NSInteger)row {
-    NSData * temp = [NSData new];
-    if(list.state == 0)
-    {
-        switch (section) {
-            case 0:
-                [lowPriority removeObjectAtIndex:row];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:lowPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:lowPriorityKey];
-                [defaults synchronize];
-                break;
-                
-            case 1:
-                [medPriority removeObjectAtIndex:row];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:medPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:medPriorityKey];
-                [defaults synchronize];
-                break;
-                
-            default:
-                [highPriority removeObjectAtIndex:row];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:highPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:highPriorityKey];
-                [defaults synchronize];
-                break;
-        }
-        switch (list.priority)
+        switch (indexPath.section)
         {
             case 0:
-                [lowPriority addObject:list];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:lowPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:lowPriorityKey];
-                [defaults synchronize];
+                [editingThirdVC setList:lowPriority[indexPath.row]];
                 break;
-                
-            case 1 :
-                [medPriority addObject:list];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:medPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:medPriorityKey];
-                [defaults synchronize];
+            case 1:
+                [editingThirdVC setList:medPriority[indexPath.row]];
                 break;
-                
             default:
-                [highPriority addObject:list];
-                temp = [NSKeyedArchiver archivedDataWithRootObject:highPriority requiringSecureCoding:YES error:nil];
-                [defaults setObject:temp forKey:highPriorityKey];
-                [defaults synchronize];
+                [editingThirdVC setList:highPriority[indexPath.row]];
                 break;
         }
-        [self.inDoneTable reloadData];
+        [editingThirdVC setSection:indexPath.section];
+        [editingThirdVC setRow:indexPath.row];
+        [self.navigationController pushViewController:editingThirdVC animated:YES];
+    }
+    else
+    {
+        [editingThirdVC setList:done[indexPath.row]];
+        [editingThirdVC setSection:indexPath.section];
+        [editingThirdVC setRow:indexPath.row];
+        [self.navigationController pushViewController:editingThirdVC animated:YES];
     }
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return 80;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return  80;
+}
 /*
 #pragma mark - Navigation
 

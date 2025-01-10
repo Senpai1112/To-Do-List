@@ -9,7 +9,7 @@
 #import "Delegate.h"
 #import "EditingDelegate.h"
 
-@interface ViewController : UIViewController <UITableViewDelegate,UITableViewDataSource,Delegate,EditingDelegate>
+@interface ViewController : UIViewController <UITableViewDelegate,UITableViewDataSource,Delegate,EditingDelegate,UISearchControllerDelegate>
 
 
 @end
